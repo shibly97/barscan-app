@@ -1,6 +1,22 @@
+import 'dart:convert';
+import 'package:barscan/Utils/API/API.dart';
 import 'package:flutter/material.dart';
-
+import 'package:http/http.dart' as http;
 import 'product/product_details.dart';
+
+class Category {
+  final int id;
+  final String name;
+
+  Category({required this.id, required this.name});
+
+  factory Category.fromJson(Map<String, dynamic> json) {
+    return Category(
+      id: json['id'],
+      name: json['name'],
+    );
+  }
+}
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -10,47 +26,49 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  List<Category> categories = [Category(id: 0, name: "All")];
   String selectedCategory = "All";
   TextEditingController searchController = TextEditingController();
 
-  final List<String> categories = ["All", "Shampoo", "Hair Mask", "Conditioner"];
-
-  final List<Map<String, dynamic>> searchResults = [
-    {
-      "image": "images/shampoo.png",
-      "name": "Alfaparf Milano Moisturizing Shampoo",
-      "rating": 4,
-      "reviews": "10.1k",
-    },
-    {
-      "image": "images/mask.jpg",
-      "name": "Alfaparf Moisturizing Hair Mask",
-      "rating": 3,
-      "reviews": "8.5k",
-    },
-  ];
-
-  List<Map<String, dynamic>> filteredResults = [];
-
-  void performSearch() {
-    setState(() {
-      if (selectedCategory == "All" && searchController.text.isEmpty) {
-        filteredResults = List.from(searchResults);
-      } else {
-        filteredResults = searchResults.where((item) {
-          bool matchesCategory = selectedCategory == "All" || item["name"].contains(selectedCategory);
-          bool matchesText =
-              searchController.text.isEmpty || item["name"].toLowerCase().contains(searchController.text.toLowerCase());
-          return matchesCategory && matchesText;
-        }).toList();
-      }
-    });
-  }
+  List<dynamic> filteredResults = [];
 
   @override
   void initState() {
     super.initState();
-    filteredResults = List.from(searchResults);
+    fetchCategories();
+    performSearch();
+  }
+
+  Future<void> fetchCategories() async {
+    final response = await http.get(Uri.parse('$getCategoryByStatus/Active'));
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      setState(() {
+        categories.addAll(data.map((e) => Category.fromJson(e)).toList());
+      });
+    } else {
+      debugPrint("Failed to load categories");
+    }
+  }
+
+  Future<void> performSearch() async {
+    final query = searchController.text.trim();
+    final category = selectedCategory;
+
+    final uri = Uri.parse("$getProductSearch").replace(queryParameters: {
+      if (category != "All") 'category': category,
+      if (query.isNotEmpty) 'search': query,
+    });
+
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      setState(() {
+        filteredResults = jsonDecode(response.body);
+      });
+    } else {
+      debugPrint("Failed to fetch products");
+    }
   }
 
   @override
@@ -69,7 +87,7 @@ class _SearchScreenState extends State<SearchScreen> {
               children: [
                 Expanded(
                   child: Container(
-                    height: 38, // Reduced height
+                    height: 38,
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.black),
@@ -78,16 +96,17 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: selectedCategory,
-                        items: categories.map((String category) {
+                        items: categories.map((category) {
                           return DropdownMenuItem(
-                            value: category,
-                            child: Text(category, style: const TextStyle(fontSize: 14)),
+                            value: category.name,
+                            child: Text(category.name, style: const TextStyle(fontSize: 14)),
                           );
                         }).toList(),
                         onChanged: (value) {
                           setState(() {
                             selectedCategory = value!;
                           });
+                          performSearch();
                         },
                       ),
                     ),
@@ -96,7 +115,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: SizedBox(
-                    height: 38, // Reduced height
+                    height: 38,
                     child: TextField(
                       controller: searchController,
                       style: const TextStyle(fontSize: 14),
@@ -110,7 +129,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
                 const SizedBox(width: 8),
                 SizedBox(
-                  height: 38, // Reduced height
+                  height: 38,
                   child: ElevatedButton(
                     onPressed: performSearch,
                     style: ElevatedButton.styleFrom(
@@ -128,16 +147,15 @@ class _SearchScreenState extends State<SearchScreen> {
               itemCount: filteredResults.length,
               itemBuilder: (context, index) {
                 final item = filteredResults[index];
-
                 return GestureDetector(
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => ProductDetailScreen(
-                          productData: item,
-                        ),
-                      ),
+                     MaterialPageRoute(
+    builder: (context) => ProductDetailScreen(
+      productId: item["id"], // make sure this exists in your search result
+    ),
+  ),
                     );
                   },
                   child: Container(
@@ -157,22 +175,28 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     child: Row(
                       children: [
-                        Image.asset(item["image"], width: 60, height: 60, fit: BoxFit.cover),
+                        Image.network(
+                          item['image'] ?? '',
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.image, size: 60, color: Colors.grey);
+                          },
+                        ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                item["name"],
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
+                              Text(item["name"], style: const TextStyle(fontWeight: FontWeight.bold)),
                               const SizedBox(height: 5),
                               Row(
                                 children: List.generate(5, (i) {
+                                 final rating = double.tryParse(item["averageRating"].toString()) ?? 0.0;
                                   return Icon(
                                     Icons.star,
-                                    color: i < item["rating"] ? Colors.orange : Colors.grey,
+                                    color: i < rating.round() ? Colors.orange : Colors.grey,
                                     size: 20,
                                   );
                                 }),
@@ -180,10 +204,10 @@ class _SearchScreenState extends State<SearchScreen> {
                               const SizedBox(height: 5),
                               Row(
                                 children: [
-                                  Text("Rated ${item["rating"]}"),
+                                 Text("Rated ${(double.tryParse(item["averageRating"].toString()) ?? 0.0).toStringAsFixed(1)}"),
                                   const SizedBox(width: 10),
                                   const Icon(Icons.chat_bubble_outline, size: 16),
-                                  Text(" ${item["reviews"]}"),
+                                  Text(" ${item["reviewCount"] ?? 0}"),
                                 ],
                               ),
                             ],
@@ -201,23 +225,3 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 }
-
-// class ProductDetailScreen extends StatelessWidget {
-//   final Map<String, dynamic> productData;
-
-//   const ProductDetailScreen({super.key, required this.productData});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text(productData["name"]),
-//         backgroundColor: Colors.orange,
-//         foregroundColor: Colors.black,
-//       ),
-//       body: Center(
-//         child: Text("Product details for ${productData["name"]}"),
-//       ),
-//     );
-//   }
-// }

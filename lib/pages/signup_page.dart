@@ -1,4 +1,8 @@
+import 'package:barscan/Utils/API/API.dart';
+import 'package:barscan/pages/OtpVerificationScreen.dart';
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -10,16 +14,44 @@ class SignUpPage extends StatefulWidget {
 class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _firstNameController = TextEditingController();
+  final TextEditingController _lastNameController = TextEditingController();
+  final TextEditingController _userNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
-  void _signUp() {
+  void _signUp() async {
     if (_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign Up Successful!')),
+      final response = await http.post(
+        Uri.parse(signIn),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "fistName": _firstNameController.text.trim(),
+          "lastName": _lastNameController.text.trim(),
+          "userName": _userNameController.text.trim(),
+          "email": _emailController.text.trim(),
+          "contact": "0712345678",
+          "zip": "10100",
+          "password": _passwordController.text.trim(),
+        }),
       );
+
+      final data = jsonDecode(response.body);
+      if (data['success']) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OtpVerificationScreen(
+              userId: data['id']
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(data['message'] ?? 'Signup failed')),
+        );
+      }
     }
   }
 
@@ -35,7 +67,11 @@ class _SignUpPageState extends State<SignUpPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInputField(label: "Name", controller: _nameController),
+                _buildInputField(label: "First Name", controller: _firstNameController),
+                const SizedBox(height: 20),
+                _buildInputField(label: "Last Name", controller: _lastNameController),
+                const SizedBox(height: 20),
+                _buildInputField(label: "Username", controller: _userNameController),
                 const SizedBox(height: 20),
                 _buildInputField(label: "Email", controller: _emailController, keyboardType: TextInputType.emailAddress),
                 const SizedBox(height: 20),
@@ -48,7 +84,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   child: ElevatedButton(
                     onPressed: _signUp,
                     style: ElevatedButton.styleFrom(
-                       backgroundColor: Colors.black,
+                      backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -76,12 +112,11 @@ class _SignUpPageState extends State<SignUpPage> {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
-      obscureText: obscureText, // Moved to correct position
+      obscureText: obscureText,
       decoration: InputDecoration(
         labelText: label,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Colors.grey),
         ),
         filled: true,
         fillColor: Colors.white,
