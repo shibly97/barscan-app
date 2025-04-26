@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:barscan/Utils/constants.dart';
 import 'package:barscan/Utils/store/customer_session.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -145,7 +146,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
             const SizedBox(height: 15),
-            Image.network(product!["image"], width: 150, height: 150),
+            // Image.network(product!["image"], width: 150, height: 150),
+            Image.network(
+  baseUrl +'/uploads/'+ (product!["image"] ?? ""),
+  width: 150,
+  height: 150,
+),
             const SizedBox(height: 10),
             Text(
               product!["name"],
@@ -182,7 +188,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             const SizedBox(height: 25),
             ElevatedButton(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => ReviewsPage()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => ReviewsPage(productId:  product!["id"],)));
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
@@ -193,7 +199,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             const SizedBox(height: 10),
             ElevatedButton(
               onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const IngredientsScreen()));
+                // Navigator.push(context, MaterialPageRoute(builder: (_) => const IngredientsScreen()));
+                Navigator.push(
+  context,
+  MaterialPageRoute(builder: (_) => IngredientsScreen(productId: product!["id"],)),
+);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,

@@ -7,6 +7,14 @@ const String getCategoryByStatus = '$baseUrl/category/byStatus';
 const String getProductSearch = '$baseUrl/product/search';
 const String getProductDetailsById = '$baseUrl/product/byId';
 const String addProductReview = '$baseUrl/product';
+const String getProductIngredient = '$baseUrl/ingredient';
+const String getProductHistory = '$baseUrl/product/view-history';
+
+const String getReviewReplies = '$baseUrl/review/review-replies';
+const String getProductReview = '$baseUrl/review/product-reviews';
+const String addProductReviewReply = '$baseUrl/review/product-reviews';
+const String getProductReviewReply = '$baseUrl/review/product-reviews'; 
+
 
 const String branchAddEndpoint = '$baseUrl/api/users/add/branch';
 const String createAdmin = '$baseUrl/api/users/add/admin';

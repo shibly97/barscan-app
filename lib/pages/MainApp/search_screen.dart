@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:barscan/Utils/API/API.dart';
+import 'package:barscan/Utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'product/product_details.dart';
@@ -175,8 +176,18 @@ class _SearchScreenState extends State<SearchScreen> {
                     ),
                     child: Row(
                       children: [
-                        Image.network(
-                          item['image'] ?? '',
+                        // Image.network(
+                        //   item['image'] ?? '',
+                        //   width: 60,
+                        //   height: 60,
+                        //   fit: BoxFit.cover,
+                        //   errorBuilder: (context, error, stackTrace) {
+                        //     return const Icon(Icons.image, size: 60, color: Colors.grey);
+                        //   },
+                        // ),
+                         Image.network(
+                          // item['image'] ?? '',
+                          baseUrl +'/uploads/'+ (item!["image"] ?? ""),
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
