@@ -1,10 +1,32 @@
+import 'package:barscan/pages/MainApp/profile/AccountSettingsScreen.dart';
 import 'package:barscan/pages/MainApp/profile/about_screen.dart';
 import 'package:barscan/pages/login_page.dart';
+import 'package:barscan/Utils/store/customer_session.dart'; // ✅ import session
 import 'package:flutter/material.dart';
-import 'profile/personal_info_screen.dart'; // Import the About screen
+import 'profile/personal_info_screen.dart'; 
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  String email = "";
+
+  @override
+  void initState() {
+    super.initState();
+    loadEmail();
+  }
+
+  Future<void> loadEmail() async {
+    final customerEmail = await CustomerSession.getCustomerEmail();
+    setState(() {
+      email = customerEmail ?? "";
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,13 +47,13 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 const CircleAvatar(
                   radius: 50,
-                  backgroundImage: AssetImage("images/mileni.jpg"), // Change this to the user's image
+                  backgroundImage: AssetImage("images/default_profile.png"), // ✅ default user image
                 ),
                 const SizedBox(height: 10),
 
                 // Email
                 Text(
-                  "millenin@gmail.com",
+                  email.isNotEmpty ? email : "Loading...",
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
@@ -47,22 +69,13 @@ class ProfileScreen extends StatelessWidget {
 
           // Menu Options
           _buildMenuItem("Personal Info", Icons.person, context, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) =>  PersonalInfoScreen()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const PersonalInfoScreen()));
           }),
           _buildMenuItem("Account Settings", Icons.settings, context, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) =>  PersonalInfoScreen()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const AccountSettingsScreen()));
           }),
           _buildMenuItem("About", Icons.info, context, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) =>  AboutScreen()),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen()));
           }),
           _buildMenuItem("Log Out", Icons.logout, context, () {
             _showLogoutDialog(context);
@@ -95,15 +108,12 @@ class ProfileScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                // TODO: Implement actual logout functionality
                 Navigator.pop(context);
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const LoginPage()));
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("Logged out successfully")),
                 );
-                 Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) =>  LoginPage()),
-            );
+                CustomerSession.clear(); // ✅ clear session
               },
               child: const Text("Log Out", style: TextStyle(color: Colors.red)),
             ),

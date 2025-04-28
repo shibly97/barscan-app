@@ -1,7 +1,39 @@
+import 'dart:convert';
+import 'package:barscan/Utils/constants.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:barscan/Utils/API/API.dart'; // if you have your API urls here
 
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
+
+  @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> {
+  List<dynamic> labels = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchLabels();
+  }
+
+  Future<void> fetchLabels() async {
+    try {
+      final response = await http.get(Uri.parse('$getAllLabel'));
+      if (response.statusCode == 200) {
+        setState(() {
+          labels = jsonDecode(response.body);
+        });
+      } else {
+        debugPrint("Failed to load labels");
+      }
+    } catch (e) {
+      debugPrint("Error fetching labels: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,16 +52,8 @@ class AboutScreen extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    Image.asset("images/barcode_logo.png", height: 80), // Update with actual logo
+                    Image.asset('images/barscan.png', height: 200),
                     const SizedBox(height: 10),
-                    const Text(
-                      "BarScan",
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orange),
-                    ),
-                    const Text(
-                      "Because we care about you",
-                      style: TextStyle(fontSize: 14, color: Colors.redAccent),
-                    ),
                   ],
                 ),
               ),
@@ -53,9 +77,9 @@ class AboutScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-              _buildRiskIndicator("Safe", Colors.green, Icons.check_circle),
-              _buildRiskIndicator("Caution Advised", Colors.orange, Icons.warning),
-              _buildRiskIndicator("Risky", Colors.red, Icons.cancel),
+              
+              // 🔥 Here we dynamically load labels
+              ...labels.map((label) => _buildRiskIndicator(label)).toList(),
             ],
           ),
         ),
@@ -63,19 +87,25 @@ class AboutScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRiskIndicator(String label, Color color, IconData icon) {
+  Widget _buildRiskIndicator(Map<String, dynamic> label) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 5),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: Colors.orange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color),
+           Image.network(
+                     baseUrl +'/uploads/'+ (label!["image_path"] ?? ""),
+                    height: 20,
+                  ),
           const SizedBox(width: 10),
-          Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: color)),
+          Text(
+            label['name'] ?? '',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );

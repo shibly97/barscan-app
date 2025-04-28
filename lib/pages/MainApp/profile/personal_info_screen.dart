@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:barscan/Utils/API/API.dart';
+import 'package:http/http.dart' as http;
+import 'package:barscan/Utils/store/customer_session.dart';
 
 class PersonalInfoScreen extends StatefulWidget {
   const PersonalInfoScreen({super.key});
@@ -8,26 +12,86 @@ class PersonalInfoScreen extends StatefulWidget {
 }
 
 class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
-  final TextEditingController _usernameController = TextEditingController(text: "millenin");
-  final TextEditingController _dobController = TextEditingController(text: "12/12/2000");
-  final TextEditingController _mobileController = TextEditingController(text: "07485296315");
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _dobController = TextEditingController();
+  final TextEditingController _mobileController = TextEditingController();
 
-  List<String> allIngredients = ["Water", "Chloride", "Sulphate", "Paraben", "Alcohol", "Fragrance"];
-  List<String> selectedIngredients = ["Water", "Chloride", "Sulphate"];
+  List<dynamic> allIngredients = [];
+  List<int> selectedIngredientIds = [];
+  int? customerId;
 
-  void _addIngredient(String ingredient) {
-    if (!selectedIngredients.contains(ingredient)) {
-      setState(() {
-        selectedIngredients.add(ingredient);
-      });
+  @override
+  void initState() {
+    super.initState();
+    loadCustomerData();
+  }
+
+  Future<void> loadCustomerData() async {
+    final id = await CustomerSession.getCustomerId();
+    customerId = int.tryParse(id ?? '');
+
+    if (customerId != null) {
+      final profileResponse = await http.get(Uri.parse('$customerProfile/$customerId'));
+      final ingredientsResponse = await http.get(Uri.parse('$getAllIngredient'));
+
+      if (profileResponse.statusCode == 200 && ingredientsResponse.statusCode == 200) {
+        final profileData = jsonDecode(profileResponse.body);
+        final ingredientsData = jsonDecode(ingredientsResponse.body);
+
+        setState(() {
+          _usernameController.text = profileData['customer']['user_name'] ?? '';
+          _dobController.text = (profileData['customer']['date_of_birth'] ?? '').toString().split('T')[0];
+          _mobileController.text = profileData['customer']['contact'] ?? '';
+          selectedIngredientIds = List<int>.from(profileData['avoidedIngredients']);
+          allIngredients = ingredientsData;
+        });
+      }
     }
   }
 
-  void _removeIngredient(String ingredient) {
-    setState(() {
-      selectedIngredients.remove(ingredient);
-    });
+  Future<void> updateProfile() async {
+    if (customerId == null) return;
+
+    try {
+      // Update personal info
+      await http.put(
+        Uri.parse('$customerProfile/$customerId'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "user_name": _usernameController.text.trim(),
+          "contact": _mobileController.text.trim(),
+          "date_of_birth": _dobController.text.trim(),
+        }),
+      );
+
+      // Update avoid ingredients
+      await http.put(
+        Uri.parse('$customerProfile/$customerId/avoid-ingredients'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "ingredientIds": selectedIngredientIds,
+        }),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile updated successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error updating profile.')),
+      );
+    }
   }
+
+void toggleIngredient(int ingredientId) {
+  setState(() {
+    if (selectedIngredientIds.contains(ingredientId)) {
+      selectedIngredientIds.remove(ingredientId);
+    } else {
+      selectedIngredientIds.add(ingredientId);
+    }
+  });
+}
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +101,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
         centerTitle: true,
         backgroundColor: Colors.orange,
       ),
-      body: SingleChildScrollView( // ✅ Fix overflow issue when keyboard opens
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,61 +111,53 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
 
             const SizedBox(height: 15),
             const Text("Date of Birth*", style: TextStyle(fontWeight: FontWeight.bold)),
-            TextField(controller: _dobController, decoration: _inputDecoration()),
+            TextField(
+  controller: _dobController,
+  readOnly: true, // user can't type manually
+  decoration: _inputDecoration().copyWith(
+    hintText: 'Select Date of Birth',
+    suffixIcon: const Icon(Icons.calendar_today),
+  ),
+  onTap: () async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) {
+      setState(() {
+        _dobController.text = "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      });
+    }
+  },
+),
+
 
             const SizedBox(height: 15),
             const Text("Mobile Number", style: TextStyle(fontWeight: FontWeight.bold)),
             TextField(controller: _mobileController, decoration: _inputDecoration()),
 
             const SizedBox(height: 25),
+            const Text("Avoid Ingredients", style: TextStyle(fontWeight: FontWeight.bold)),
 
-             const Text("Avoid Ingredients", style: TextStyle(fontWeight: FontWeight.bold)),
-
-             const SizedBox(height: 15),
-
-            
-            // ✅ Smaller dropdown
-            DropdownButtonFormField<String>(
-              value: allIngredients.isNotEmpty ? allIngredients.first : null,
-              items: allIngredients.map((String ingredient) {
-                return DropdownMenuItem<String>(
-                  value: ingredient,
-                  child: Text(ingredient, style: const TextStyle(fontSize: 14)), // Smaller text
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              children: allIngredients.map((ingredient) {
+                final ingredientId = int.tryParse(ingredient['id'].toString()) ?? 0; // 👈 here
+                final isSelected = selectedIngredientIds.contains(ingredient['id']);
+                return FilterChip(
+                  label: Text(ingredient['name']),
+                  selected: isSelected,
+                  onSelected: (_) => toggleIngredient(ingredient['id']),
                 );
               }).toList(),
-              onChanged: (value) {
-                if (value != null) _addIngredient(value);
-              },
-              decoration: InputDecoration(
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), // Smaller padding
-              ),
             ),
 
-            const SizedBox(height: 10),
-            // ✅ Selected ingredients list
-            ListView.builder(
-              shrinkWrap: true, // Prevents infinite height issues
-              physics: const NeverScrollableScrollPhysics(), // Disables scrolling inside ListView
-              itemCount: selectedIngredients.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(selectedIngredients[index], style: const TextStyle(fontSize: 14)),
-                  trailing: TextButton(
-                    onPressed: () => _removeIngredient(selectedIngredients[index]),
-                    child: const Text("Remove", style: TextStyle(color: Colors.red)),
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Profile Updated Successfully")),
-                );
-              },
+              onPressed: updateProfile,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
@@ -118,7 +174,7 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
   InputDecoration _inputDecoration() {
     return InputDecoration(
       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8), // ✅ Smaller padding
+      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
     );
   }
 }

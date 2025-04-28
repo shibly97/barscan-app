@@ -9,6 +9,17 @@ const String getProductDetailsById = '$baseUrl/product/byId';
 const String addProductReview = '$baseUrl/product';
 const String getProductIngredient = '$baseUrl/ingredient';
 const String getProductHistory = '$baseUrl/product/view-history';
+const String customerProfile = '$baseUrl/customer/profile';
+const String getAllIngredient = '$baseUrl/ingredient/all';
+const String getAllLabel = '$baseUrl/label/all';
+const String inactivateAccountPost = '$baseUrl/customer';
+const String getProductRecommendations = '$baseUrl/product//recommendations';
+const String getProductRecommendationsByBrand = '$baseUrl/product/company-recommendations';
+const String getByBarCode = '$baseUrl/product/barcode';
+const String getArticles = '$baseUrl/article/all';
+const String forgotPassword = '$baseUrl/customer/forgot-password';
+const String resetPasswordPost = '$baseUrl/customer/reset-password';
+const String verifyOTP = '$baseUrl/customer/verify-forgot-otp';
 
 const String getReviewReplies = '$baseUrl/review/review-replies';
 const String getProductReview = '$baseUrl/review/product-reviews';

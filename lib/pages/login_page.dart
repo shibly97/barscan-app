@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:barscan/Utils/API/API.dart';
 import 'package:barscan/Utils/store/customer_session.dart';
+import 'package:barscan/pages/MainApp/ForgotPasswordScreen.dart';
 import 'package:barscan/pages/Main_App.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -58,14 +59,16 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   void _forgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Forgot Password Clicked!')),
-    );
+     Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ForgotPasswordScreen()),
+      );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text("Login")),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(

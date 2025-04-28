@@ -20,7 +20,8 @@ class Category {
 }
 
 class SearchScreen extends StatefulWidget {
-  const SearchScreen({super.key});
+  final String? initialSearchText;
+   const SearchScreen({super.key, this.initialSearchText});
 
   @override
   State<SearchScreen> createState() => _SearchScreenState();
@@ -37,7 +38,10 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
     fetchCategories();
+     if (widget.initialSearchText != null) {
+    searchController.text = widget.initialSearchText!;
     performSearch();
+  }
   }
 
   Future<void> fetchCategories() async {
