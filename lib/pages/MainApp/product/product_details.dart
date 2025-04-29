@@ -164,6 +164,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 14),
             ),
+            if ((product!["certification_name"] ?? "").isNotEmpty)
+  Padding(
+    padding: const EdgeInsets.only(top: 8.0),
+    child: Text(
+      "Certification: ${product!["certification_name"]}",
+      textAlign: TextAlign.center,
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.bold,
+        color: Colors.blueAccent,
+      ),
+    ),
+  ),
             const SizedBox(height: 25),
             const Text("Product Rating", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 5),

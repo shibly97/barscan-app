@@ -41,13 +41,14 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
     }
   }
 
-  void _showIngredientDetails(BuildContext context, Map<String, dynamic> ingredient) {
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(15),
+void _showIngredientDetails(BuildContext context, Map<String, dynamic> ingredient) {
+  showModalBottomSheet(
+    context: context,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+    builder: (context) {
+      return Container(
+        padding: const EdgeInsets.all(15),
+        child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -70,31 +71,35 @@ class _IngredientsScreenState extends State<IngredientsScreen> {
                 const SizedBox(height: 10),
                 if (ingredient["label_image_path"] != null)
                   Image.network(
-                     baseUrl +'/uploads/'+ (ingredient!["label_image_path"] ?? ""),
+                    baseUrl + '/uploads/' + (ingredient["label_image_path"] ?? ""),
                     height: 60,
                   ),
               ],
-              const SizedBox(height: 15),
-              ElevatedButton(
-                onPressed: () async {
-                  final url = Uri.parse(ingredient["ingredient_source"] ?? "");
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Could not open link")),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-                child: const Text("View Source", style: TextStyle(color: Colors.white)),
-              ),
+              const SizedBox(height: 20),
+              if (ingredient["ingredient_source"] != null && ingredient["ingredient_source"].toString().isNotEmpty) ...[
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Source",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                const SizedBox(height: 5),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    ingredient["ingredient_source"] ?? "",
+                    style: TextStyle(fontSize: 14, color: Colors.blue),
+                  ),
+                ),
+              ],
             ],
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    },
+  );
+}
 
   @override
   Widget build(BuildContext context) {

@@ -111,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 20),
 
                   // More from Brands
-                  const Text("More from Your Favorite Brands", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Text("Top rated", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
                   SizedBox(
                     height: 150,
