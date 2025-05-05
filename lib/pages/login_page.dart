@@ -52,6 +52,7 @@ class _LoginPageState extends State<LoginPage> {
       }
     } catch (e) {
       setState(() => _loading = false);
+      print("Error: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Something went wrong')),
       );

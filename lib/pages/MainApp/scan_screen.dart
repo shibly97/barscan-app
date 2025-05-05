@@ -19,6 +19,7 @@ class _ScanScreenState extends State<ScanScreen> {
   bool isScanning = false;
 
   Future<void> scanBarcode() async {
+    print("searchingggg 22222");
     try {
       String scannedBarcode = await FlutterBarcodeScanner.scanBarcode(
           '#ff6666', 'Cancel', false, ScanMode.BARCODE);
@@ -37,40 +38,36 @@ class _ScanScreenState extends State<ScanScreen> {
   }
 
   Future<void> searchProductByBarcode() async {
-    if (barcodeResult.isEmpty) {
+
+        if (barcodeResult.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please scan a barcode first.")),
       );
       return;
     }
 
-    try {
-      final response = await http.get(Uri.parse('$getByBarCode/$barcodeResult'));
+  try {
+    final response = await http.get(Uri.parse('$getByBarCode/4796003448968'));
+    
+    if (response.statusCode == 200) {
+      final product = jsonDecode(response.body); // ✅ single object, not a list
 
-      if (response.statusCode == 200) {
-        final List<dynamic> products = jsonDecode(response.body);
-
-        if (products.isNotEmpty) {
-          final product = products.first;
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => ProductDetailScreen(productId: product['id'])),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("No product found for this barcode.")),
-          );
-        }
-      } else {
-        throw Exception("Failed to fetch product.");
-      }
-    } catch (e) {
-      debugPrint("Error searching product: $e");
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => ProductDetailScreen(productId: product['id'])),
+      );
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Something went wrong. Try again.")),
+        const SnackBar(content: Text("No product found for this barcode.")),
       );
     }
+  } catch (e) {
+    print("Error searching product: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Something went wrong. Try again.")),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
